@@ -20,9 +20,6 @@ async function registerPhonePasskey(event){
     if(!data.user||String(data.user.email||'').toLowerCase()!=='elvira@dgsl.ie')throw new Error('Use the SiteProgram owner account to set up these phones.');
     let claim=await client.rpc('claim_phone_completion_authorization',{p_project_id:PHONE_COMPLETION_PROJECT_ID});
     if(claim.error)throw claim.error;
-    let {data:keys,error:keyError}=await client.auth.passkey.list();
-    if(keyError)throw keyError;
-    if((keys||[]).length>=2)throw new Error('Two passkeys are already registered. Remove one before adding this phone.');
     message.textContent='Follow the iPhone prompt to save this phone’s passkey…';
     let registered=await client.auth.registerPasskey();
     if(registered.error){
