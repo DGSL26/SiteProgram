@@ -655,3 +655,5 @@ body.map-view-active .map-editor-page{display:flex;flex-direction:column;gap:10p
 .registration-history-row b{overflow-wrap:anywhere}
 .registration-history-row small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
 @media(max-width:600px){.registration-history-row{grid-template-columns:1fr}}
+
+.form-fields .standalone-section-add{justify-self:start;padding:8px 11px;font-size:12px}
