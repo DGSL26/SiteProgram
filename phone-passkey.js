@@ -8,8 +8,44 @@ document.head.append(phonePasskeyStyles);
 function phonePasskeyClient(){if(!phoneSetupClient)phoneSetupClient=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,experimental:{passkey:true}}});return phoneSetupClient}
 function phoneCompletionReady(){try{return localStorage.getItem(PHONE_COMPLETION_READY_KEY)==='1'}catch{return false}}
 function showPhonePasskeySetup(){if(!new URLSearchParams(location.search).has('setup-phone-passkey'))return;if(!isPhoneDevice()){document.body.insertAdjacentHTML('beforeend','<main class="phone-passkey-screen"><section class="phone-passkey-card"><h1>Set up phone access</h1><p>Open this setup link on the phone that will use task completion.</p></section></main>');return}document.body.insertAdjacentHTML('beforeend',`<main class="phone-passkey-screen"><section class="phone-passkey-card"><h1>Set up this phone</h1><p>Sign in once with the SiteProgram account, then save a passkey for this phone. The normal app will remain signed out.</p><form id="phonePasskeySetupForm"><label>Email<input name="email" type="email" autocomplete="username" required value="elvira@dgsl.ie"></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn primary" type="submit">Continue with Face ID</button></form><p id="phonePasskeySetupMessage" class="phone-passkey-message" role="status" aria-live="polite"></p><button class="btn" type="button" onclick="location.replace(location.pathname)">Cancel</button></section></main>`);document.querySelector('#phonePasskeySetupForm').addEventListener('submit',registerPhonePasskey)}
-async function registerPhonePasskey(event){event.preventDefault();if(phoneSetupBusy)return;phoneSetupBusy=true;let form=event.currentTarget,message=document.querySelector('#phonePasskeySetupMessage'),button=form.querySelector('button[type=submit]'),client=phonePasskeyClient();button.disabled=true;message.classList.remove('error');message.textContent='Checking the account…';try{let {data,error}=await client.auth.signInWithPassword({email:form.elements.email.value.trim(),password:form.elements.password.value});if(error)throw error;if(!data.user||String(data.user.email||'').toLowerCase()!=='elvira@dgsl.ie')throw new Error('Use the SiteProgram owner account to set up these phones.');let claim=await client.rpc('claim_phone_completion_authorization',{p_project_id:PHONE_COMPLETION_PROJECT_ID});if(claim.error)throw claim.error;let {data:keys,error:keyError}=await client.auth.passkey.list();if(keyError)throw keyError;if((keys||[]).length>=2)throw new Error('Two passkeys are already registered. Remove one before adding this phone.');message.textContent='Follow the iPhone prompt to save this phone’s passkey…';let registered=await client.auth.registerPasskey();if(registered.error)throw registered.error;localStorage.setItem(PHONE_COMPLETION_READY_KEY,'1');message.textContent='This phone is set up. Signing out…';await client.auth.signOut();setTimeout(()=>location.replace(location.pathname),1100)}catch(error){try{await client.auth.signOut()}catch{}message.textContent=error?.message||'Could not set up this phone. Try again.';message.classList.add('error');button.disabled=false}finally{phoneSetupBusy=false}}
-function revealPhoneCompleteAction(card){if(!card?.isConnected||card.dataset.complete==='true'||card.querySelector('.guest-complete-action'))return;let action=document.createElement('button');action.type='button';action.className='guest-complete-action';action.textContent='Mark complete';action.setAttribute('aria-label','Mark this task complete');action.addEventListener('click',event=>completePhoneTask(event,card.dataset.taskId));card.append(action)}
+async function registerPhonePasskey(event){
+  event.preventDefault();
+  if(phoneSetupBusy)return;
+  phoneSetupBusy=true;
+  let form=event.currentTarget,message=document.querySelector('#phonePasskeySetupMessage'),button=form.querySelector('button[type=submit]'),client=phonePasskeyClient();
+  button.disabled=true;message.classList.remove('error');message.textContent='Checking the account…';
+  try{
+    let {data,error}=await client.auth.signInWithPassword({email:form.elements.email.value.trim(),password:form.elements.password.value});
+    if(error)throw error;
+    if(!data.user||String(data.user.email||'').toLowerCase()!=='elvira@dgsl.ie')throw new Error('Use the SiteProgram owner account to set up these phones.');
+    let claim=await client.rpc('claim_phone_completion_authorization',{p_project_id:PHONE_COMPLETION_PROJECT_ID});
+    if(claim.error)throw claim.error;
+    let {data:keys,error:keyError}=await client.auth.passkey.list();
+    if(keyError)throw keyError;
+    if((keys||[]).length>=2)throw new Error('Two passkeys are already registered. Remove one before adding this phone.');
+    message.textContent='Follow the iPhone prompt to save this phone’s passkey…';
+    let registered=await client.auth.registerPasskey();
+    if(registered.error){
+      let duplicate=registered.error.code==='webauthn_credential_exists'||/authenticator was previously registered|credential.*already.*registered/i.test(registered.error.message||'');
+      if(!duplicate)throw registered.error;
+      message.textContent='This passkey already exists. Confirm it with Face ID to finish setup…';
+      await client.auth.signOut();
+      let existing=await client.auth.signInWithPasskey();
+      if(existing.error)throw existing.error;
+      if(!existing.data.user||String(existing.data.user.email||'').toLowerCase()!=='elvira@dgsl.ie')throw new Error('The existing passkey belongs to a different account.');
+      let verifiedClaim=await client.rpc('claim_phone_completion_authorization',{p_project_id:PHONE_COMPLETION_PROJECT_ID});
+      if(verifiedClaim.error)throw verifiedClaim.error;
+    }
+    localStorage.setItem(PHONE_COMPLETION_READY_KEY,'1');
+    message.textContent=registered.error?'Existing passkey confirmed. Signing out…':'This phone is set up. Signing out…';
+    await client.auth.signOut();
+    setTimeout(()=>location.replace(location.pathname),1100);
+  }catch(error){
+    try{await client.auth.signOut()}catch{}
+    message.textContent=error?.message||'Could not set up this phone. Try again.';
+    message.classList.add('error');button.disabled=false;
+  }finally{phoneSetupBusy=false}
+}function revealPhoneCompleteAction(card){if(!card?.isConnected||card.dataset.complete==='true'||card.querySelector('.guest-complete-action'))return;let action=document.createElement('button');action.type='button';action.className='guest-complete-action';action.textContent='Mark complete';action.setAttribute('aria-label','Mark this task complete');action.addEventListener('click',event=>completePhoneTask(event,card.dataset.taskId));card.append(action)}
 function clearPhoneHold(){if(phoneHoldTimer){clearTimeout(phoneHoldTimer);phoneHoldTimer=null}phoneHoldCard?.classList.remove('guest-complete-hold');phoneHoldCard=null;phoneHoldOrigin=null}
 document.addEventListener('pointerdown',event=>{if(!isPhoneDevice()||user||!phoneCompletionReady()||event.pointerType!=='touch')return;let card=event.target.closest('#sequence .sequence-task-link');if(!card||card.dataset.complete==='true'||event.target.closest('.guest-complete-action'))return;clearPhoneHold();phoneHoldCard=card;phoneHoldOrigin={x:event.clientX,y:event.clientY};phoneHoldTimer=setTimeout(()=>{if(phoneHoldCard?.isConnected){sequenceClickBlockUntil=Date.now()+1100;phoneHoldCard.classList.add('guest-complete-hold');revealPhoneCompleteAction(phoneHoldCard)}phoneHoldTimer=null},650)},{passive:true});
 document.addEventListener('pointermove',event=>{if(!phoneHoldTimer||event.pointerType!=='touch'||!phoneHoldOrigin)return;if(Math.hypot(event.clientX-phoneHoldOrigin.x,event.clientY-phoneHoldOrigin.y)>12)clearPhoneHold()},{passive:true});
