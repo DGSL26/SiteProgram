@@ -214,6 +214,9 @@ body.signed-out .content{display:block}body.signed-out .topright{display:flex}.l
 .sequence-rename:hover,.sequence-rename:focus-visible{border-color:var(--teal);color:var(--teal);outline:none}
 .sequence-name-modal label{display:grid;gap:6px;margin:16px 0 4px;color:var(--ink);font-size:12px;font-weight:650}
 .sequence-name-modal input{width:100%;height:42px;padding:0 11px;border:1px solid var(--line);border-radius:7px;font:inherit;color:var(--ink)}
+.sequence-name-modal label{min-width:0}
+.sequence-name-modal select{display:block;width:100%;min-width:0;max-width:100%;height:42px;padding:0 34px 0 11px;border:1px solid var(--line);border-radius:7px;background-color:#fff;color:var(--ink);font:inherit;box-sizing:border-box}
+.sequence-name-modal select:focus{border-color:var(--teal);outline:3px solid #078a911c}
 .sequence-name-modal input:focus{border-color:var(--teal);outline:3px solid #078a911c}
 
 .task-row .duration-cell{flex-direction:column;gap:2px;white-space:normal}
