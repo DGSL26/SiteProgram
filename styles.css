@@ -657,3 +657,23 @@ body.map-view-active .map-editor-page{display:flex;flex-direction:column;gap:10p
 @media(max-width:600px){.registration-history-row{grid-template-columns:1fr}}
 
 .form-fields .standalone-section-add{justify-self:start;padding:8px 11px;font-size:12px}
+/* Linked-sequence branches */
+.sequence-branch{position:relative;margin:7px 0 9px 25px;color:var(--ink)}
+.sequence-branch:before{content:"";position:absolute;left:-15px;top:-10px;width:14px;height:22px;border-left:2px solid #20aaa3;border-bottom:2px solid #20aaa3;border-bottom-left-radius:8px}
+.sequence-branch-heading{position:relative;list-style:none;cursor:pointer;border:1px solid #cde7e5;border-radius:6px;background:#e8f6f5;color:#15565a;padding:6px 9px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sequence-branch-heading::-webkit-details-marker{display:none}
+.sequence-branch-heading:before{content:"›";display:inline-block;margin-right:7px;font-size:16px;line-height:10px;transition:transform .15s ease}
+.sequence-branch[open]>.sequence-branch-heading:before{transform:rotate(90deg)}
+.sequence-branch-list{position:relative;margin:0 0 0 10px;padding:3px 0 5px 12px;border-left:2px solid #20aaa3}
+.sequence-branch-task.step{margin:6px 0 0;padding:9px 10px;background:#fff}
+.sequence-branch-task.step:before{display:none}
+.sequence-branch-connector{height:7px;border-left:1px solid #20aaa3;margin-left:4px}
+.sequence-branch-empty{margin:5px 0 0;color:var(--muted);font-size:11px}
+.sequence-branch-context{position:fixed;z-index:10000;min-width:190px;padding:5px;background:#fff;border:1px solid #d7e0e8;border-radius:8px;box-shadow:0 8px 24px #10263d2b}
+.sequence-branch-context button{display:block;width:100%;padding:9px 11px;border:0;border-radius:5px;background:#fff;color:var(--ink);text-align:left;font:inherit;font-size:12px;cursor:pointer}
+.sequence-branch-context button:hover,.sequence-branch-context button:focus-visible{background:#e8f6f5;color:#15565a;outline:none}
+.sequence-branch-form-note{display:block;margin-top:5px}
+.branch-impact-list{max-height:40vh;overflow:auto;margin:12px 0}
+.branch-impact-row{display:grid;gap:3px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.branch-impact-row span,.branch-impact-row small{color:var(--muted)}
+.branch-no-impact{padding:10px;background:#eef7f2;border-radius:6px;color:#276749;font-size:12px}
