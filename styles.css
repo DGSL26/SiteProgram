@@ -670,7 +670,7 @@ body.map-view-active .map-editor-page{display:flex;flex-direction:column;gap:10p
 .sequence-branch-heading:before{content:"›";display:inline-block;margin-right:7px;font-size:16px;line-height:10px;transition:transform .15s ease}
 .sequence-branch[open]>.sequence-branch-heading:before{transform:rotate(90deg)}
 .sequence-branch-list{position:relative;margin:0 0 0 10px;padding:3px 0 5px 12px;border-left:2px solid #20aaa3}
-.sequence-branch-task.step{margin:6px 0 0;padding:9px 10px;background:#fff}
+.sequence-branch-task.step{margin:6px 0 0;padding:9px 10px;background:#fff}.sequence-branch-task .branch-task-heading{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:2px}.sequence-branch-task .branch-task-number{display:inline-grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#718798;color:#fff;font-size:10px;font-weight:700;line-height:1;cursor:grab;touch-action:none;user-select:none}.sequence-branch-task .branch-task-number:hover{background:#078a91}.sequence-branch-task .branch-task-number:active{cursor:grabbing}.sequence-branch-task .branch-task-company{min-width:0}.sequence-branch-task.completed .branch-task-number{background:#8796a4}.sequence-branch-drop-indicator{width:100%;min-height:4px}
 .sequence-branch-task.step:before{display:none}
 .sequence-branch-connector{height:7px;border-left:1px solid #20aaa3;margin-left:4px}
 .sequence-branch-empty{margin:5px 0 0;color:var(--muted);font-size:11px}
