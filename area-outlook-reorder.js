@@ -18,11 +18,15 @@
   if(!keys.length)return;
   saving=true;table.classList.add('area-order-saving');
   try{
-   const record={project_id:projectId,sequence_key:AREA_ORDER_SEQUENCE_KEY,name:AREA_ORDER_RECORD_PREFIX+JSON.stringify(keys),updated_at:new Date().toISOString()};
-   const {data,error}=await db.from('schedule_sequences').upsert(record,{onConflict:'project_id,sequence_key'}).select().single();
+   const rows=keys.map((key,index)=>{
+    const compactKey=key.startsWith('area:')?'a'+key.slice(5):'s'+key.slice(8),order= index.toString(36).padStart(2,'0'),uuid=AREA_ORDER_UUID_PREFIX+String(index+1).padStart(12,'0');
+    return {project_id:projectId,sequence_key:uuid,name:AREA_ORDER_RECORD_NAME_PREFIX+order+' '+compactKey,updated_at:new Date().toISOString()};
+   });
+   const {data,error}=await db.from('schedule_sequences').upsert(rows,{onConflict:'project_id,sequence_key'}).select();
    if(error)throw error;
-   const index=sequenceNames.findIndex(row=>String(row.sequence_key)===AREA_ORDER_SEQUENCE_KEY);
-   if(index<0)sequenceNames.push(data);else sequenceNames[index]=data;
+   const savedKeys=new Set(rows.map(row=>String(row.sequence_key))),stale=sequenceNames.filter(row=>String(row.name||'').startsWith(AREA_ORDER_RECORD_NAME_PREFIX)&&!savedKeys.has(String(row.sequence_key))).map(row=>String(row.sequence_key));
+   sequenceNames=sequenceNames.filter(row=>!String(row.name||'').startsWith(AREA_ORDER_RECORD_NAME_PREFIX));sequenceNames.push(...(data||rows));
+   if(stale.length){const {error:cleanupError}=await db.from('schedule_sequences').delete().eq('project_id',projectId).in('sequence_key',stale);if(cleanupError)console.warn('Could not remove older saved area order rows:',cleanupError.message||cleanupError)}
    renderPage();note('Area order saved.');
   }catch(error){renderPage();note('Could not save the area order: '+(error.message||'Please try again.'),true)}
   finally{saving=false;document.querySelector('.area-outlook-table')?.classList.remove('area-order-saving')}
