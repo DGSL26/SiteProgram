@@ -719,4 +719,4 @@ body.map-view-active .map-editor-page{display:flex;flex-direction:column;gap:10p
  .timeline-v2-today-badge{position:absolute;top:52px;z-index:11;transform:translateX(-50%);padding:3px 8px;border-radius:999px;background:#b66b00;color:white;font-size:10px;font-weight:700;white-space:nowrap;pointer-events:none}
 }
 
-@media (min-width:901px) and (hover:hover) and (pointer:fine){.area-outlook-head,.area-outlook-row{grid-template-columns:minmax(180px,1.35fr) minmax(220px,1fr) minmax(120px,.8fr) minmax(140px,.9fr) minmax(120px,.8fr)}.area-outlook-head>span:nth-child(2){text-align:center}.area-progress-cell{width:260px;max-width:100%;justify-self:center;margin:0}}
+@media (min-width:901px) and (hover:hover) and (pointer:fine){.area-outlook-head,.area-outlook-row{grid-template-columns:repeat(5,minmax(150px,1fr))}.area-outlook-head>span:nth-child(2){text-align:center}.area-progress-cell{width:100%;max-width:none;justify-self:stretch;margin:0 22px 0 0}}
