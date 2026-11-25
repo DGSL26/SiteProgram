@@ -741,4 +741,4 @@ body.read-only-role .branch-task-number{pointer-events:none;cursor:default!impor
 .site-map-canvas-stage .site-map-fallback{position:absolute;inset:12px;z-index:1;display:block;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;background:#fff}
 .site-map-canvas-stage .site-map-fallback.hidden{display:none!important}
 .site-map-canvas-stage .site-map-status{z-index:3}
-.site-map-canvas-stage.fallback-active .site-map-controls{display:none!important}
+
