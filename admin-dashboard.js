@@ -18,7 +18,7 @@
       <section class="admin-card"><div class="admin-card-heading"><div><h3>Add a user</h3><p>Set the password they will use. It stays as their password until you change it here.</p></div></div>
         <form class="admin-create-form" data-admin-create>
           <label>Email address<input type="email" name="email" autocomplete="off" required placeholder="name@example.com"></label>
-          <label>Permanent password<input type="password" name="password" autocomplete="new-password" minlength="12" required placeholder="At least 12 characters"><small>Give this password to the user securely. SiteProgram will not email it.</small></label>
+          <label>Permanent password<input type="password" name="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"></label>
           <label>Access level<select name="role"><option value="editor">Full access — can view and edit</option><option value="viewer">View only — can see all sections</option><option value="phone_viewer">Phone view — Overview, Subcontractors and Site Map</option></select></label>
           <button class="btn primary" type="submit">Create account</button>
         </form>
@@ -123,9 +123,9 @@
   }
 
   async function setPassword(userId, box) {
-    const password = window.prompt('Enter the new permanent password (at least 12 characters).');
+    const password = window.prompt('Enter the new permanent password (at least 10 characters).');
     if (password === null) return;
-    if (password.length < 12) { window.note?.('Use a password with at least 12 characters.', true); return; }
+    if (password.length < 10) { window.note?.('Use a password with at least 10 characters.', true); return; }
     try { await invoke('set_password', { user_id: userId, password }); window.note?.('Password updated. They will need it at their next sign-in. Use Disable access to remove access immediately.'); await refreshUsers(box); await refreshActivity(box); }
     catch (error) { window.note?.(error.message, true); }
   }
