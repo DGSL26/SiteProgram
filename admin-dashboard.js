@@ -18,18 +18,22 @@
       <section class="admin-card"><div class="admin-card-heading"><div><h3>Add a user</h3><p>Set the password they will use. It stays as their password until you change it here.</p></div></div>
         <form class="admin-create-form" data-admin-create>
           <label>Email address<input type="email" name="email" autocomplete="off" required placeholder="name@example.com"></label>
-          <label>Permanent password<input type="password" name="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"></label>
+          <label>Permanent password<span class="admin-password-input"><input type="password" name="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"><button class="admin-password-toggle" type="button" data-password-toggle aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
           <label>Access level<select name="role"><option value="editor">Full access — can view and edit</option><option value="viewer">View only — can see all sections</option><option value="phone_viewer">Phone view — Overview, Subcontractors and Site Map</option></select></label>
           <button class="btn primary" type="submit">Create account</button>
         </form>
       </section>
       <section class="admin-card"><div class="admin-card-heading"><div><h3>SiteProgram users</h3><p>Change access, update a password, or disable an account when someone leaves.</p></div><span class="admin-count" data-admin-user-count>Loading…</span></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Access</th><th>Last sign-in</th><th>Status</th><th>Account actions</th></tr></thead><tbody data-admin-users><tr><td colspan="5">Loading accounts…</td></tr></tbody></table></div></section>
       <section class="admin-card"><div class="admin-card-heading"><div><h3>Activity history</h3><p>Select an account to view its sign-ins, sections opened, and schedule changes.</p></div><button class="btn" type="button" data-admin-activity-refresh>Refresh history</button></div><div class="admin-activity-browser"><div class="admin-activity-accounts" data-admin-activity-accounts>Loading accounts…</div><div class="admin-activity-person hidden" data-admin-activity-person><div class="admin-activity-person-head"><button class="btn" type="button" data-admin-activity-back>‹ &nbsp; All accounts</button><strong data-admin-activity-person-name></strong></div><div class="admin-table-wrap"><table class="admin-table admin-activity-table"><thead><tr><th>When</th><th>Activity</th><th>Details</th></tr></thead><tbody data-admin-activity><tr><td colspan="3">Choose an account to view its history.</td></tr></tbody></table></div></div></div></section>
+      <div class="admin-password-dialog hidden" data-admin-password-dialog role="dialog" aria-modal="true" aria-labelledby="adminPasswordTitle"><div class="admin-password-dialog-card"><button class="admin-password-dialog-close" type="button" data-password-cancel aria-label="Close">×</button><h3 id="adminPasswordTitle">Set password</h3><p>Current passwords cannot be viewed. Enter a new password to replace this user’s password. You can show it here to share it after saving.</p><form data-admin-password-form><label>New password<span class="admin-password-input"><input type="password" name="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"><button class="admin-password-toggle" type="button" data-password-toggle aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label><div class="admin-password-dialog-actions"><button class="btn" type="button" data-password-cancel>Cancel</button><button class="btn primary" type="submit">Save password</button></div><p class="admin-password-saved hidden" data-password-saved>Password saved. You can reveal it here to share it; close this window when finished.</p></form></div></div>
     </div>`;
     box.querySelector('[data-admin-refresh]').onclick = () => refreshUsers(box);
     box.querySelector('[data-admin-activity-refresh]').onclick = () => refreshActivity(box);
     box.querySelector('[data-admin-activity-back]').onclick = () => { selectedActivityUserId = ''; renderActivitySection(box); };
     box.querySelector('[data-admin-create]').onsubmit = event => createUser(event, box);
+    box.querySelectorAll('[data-password-toggle]').forEach(button => button.onclick = () => togglePassword(button));
+    box.querySelectorAll('[data-password-cancel]').forEach(button => button.onclick = () => closePasswordDialog(box));
+    box.querySelector('[data-admin-password-form]').onsubmit = event => savePassword(event, box);
     refreshUsers(box); refreshActivity(box);
   }
 
@@ -52,7 +56,7 @@
       return `<tr><td><strong>${escAdmin(person.email || 'Unknown email')}</strong></td><td>${role}</td><td>${escAdmin(dateText(person.last_sign_in_at))}</td><td>${status}</td><td>${actions}</td></tr>`;
     }).join('') || '<tr><td colspan="5">No user accounts found.</td></tr>';
     body.querySelectorAll('[data-user-role]').forEach(select => select.onchange = () => changeRole(select.dataset.userRole, select.value, box));
-    body.querySelectorAll('[data-password-user]').forEach(button => button.onclick = () => setPassword(button.dataset.passwordUser, box));
+    body.querySelectorAll('[data-password-user]').forEach(button => button.onclick = () => openPasswordDialog(button.dataset.passwordUser, box));
     body.querySelectorAll('[data-active-user]').forEach(button => button.onclick = () => setActive(button.dataset.activeUser, button.dataset.activeNext === 'true', box));
     renderActivitySection(box);
   }
@@ -112,7 +116,7 @@
     button.disabled = true;
     try {
       await invoke('create_user', { email: String(values.get('email')).trim(), password: String(values.get('password')), role: String(values.get('role')) });
-      form.reset(); window.note?.('Account created. Share the email and password with the user securely.'); await refreshUsers(box); await refreshActivity(box);
+      form.reset(); resetPasswordVisibility(form); window.note?.('Account created. Share the email and password with the user securely.'); await refreshUsers(box); await refreshActivity(box);
     } catch (error) { window.note?.(error.message, true); }
     finally { button.disabled = false; }
   }
@@ -122,12 +126,62 @@
     catch (error) { window.note?.(error.message, true); await refreshUsers(box); }
   }
 
-  async function setPassword(userId, box) {
-    const password = window.prompt('Enter the new permanent password (at least 10 characters).');
-    if (password === null) return;
-    if (password.length < 10) { window.note?.('Use a password with at least 10 characters.', true); return; }
-    try { await invoke('set_password', { user_id: userId, password }); window.note?.('Password updated. They will need it at their next sign-in. Use Disable access to remove access immediately.'); await refreshUsers(box); await refreshActivity(box); }
-    catch (error) { window.note?.(error.message, true); }
+  let passwordDialogUserId = '';
+  function togglePassword(button) {
+    const input = button.parentElement.querySelector('input');
+    const shown = input.type === 'password';
+    input.type = shown ? 'text' : 'password';
+    button.setAttribute('aria-label', shown ? 'Hide password' : 'Show password');
+    button.title = shown ? 'Hide password' : 'Show password';
+    button.setAttribute('aria-pressed', String(shown));
+  }
+
+  function resetPasswordVisibility(form) {
+    form.querySelectorAll('[data-password-toggle]').forEach(button => {
+      const input = button.parentElement.querySelector('input');
+      if (input) input.type = 'password';
+      button.setAttribute('aria-label', 'Show password');
+      button.setAttribute('aria-pressed', 'false');
+      button.title = 'Show password';
+    });
+  }
+
+  function openPasswordDialog(userId, box) {
+    passwordDialogUserId = userId;
+    const dialog = box.querySelector('[data-admin-password-dialog]'), form = box.querySelector('[data-admin-password-form]');
+    form.reset();
+    resetPasswordVisibility(form);
+    form.querySelector('[data-password-saved]').classList.add('hidden');
+    const save = form.querySelector('[type="submit"]'); save.disabled = false; save.textContent = 'Save password';
+    dialog.classList.remove('hidden');
+    form.querySelector('input[name="password"]').focus();
+  }
+
+  function closePasswordDialog(box) {
+    const dialog = box.querySelector('[data-admin-password-dialog]');
+    if (!dialog) return;
+    dialog.classList.add('hidden');
+    const form = box.querySelector('[data-admin-password-form]');
+    form?.reset();
+    if (form) resetPasswordVisibility(form);
+    passwordDialogUserId = '';
+  }
+
+  async function savePassword(event, box) {
+    event.preventDefault();
+    const form = event.currentTarget, input = form.querySelector('input[name="password"]'), password = input.value, button = form.querySelector('[type="submit"]');
+    if (!passwordDialogUserId || password.length < 10) { window.note?.('Use a password with at least 10 characters.', true); return; }
+    button.disabled = true; button.textContent = 'Saving…';
+    try {
+      await invoke('set_password', { user_id: passwordDialogUserId, password });
+      form.querySelector('[data-password-saved]').classList.remove('hidden');
+      button.textContent = 'Saved';
+      window.note?.('Password updated. You can reveal it in the open window to share it.');
+      await refreshUsers(box); await refreshActivity(box);
+    } catch (error) {
+      button.disabled = false; button.textContent = 'Save password';
+      window.note?.(error.message, true);
+    }
   }
 
   async function setActive(userId, active, box) {
