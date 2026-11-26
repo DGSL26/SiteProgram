@@ -788,3 +788,8 @@ body.read-only-role .branch-task-number{pointer-events:none;cursor:default!impor
 .admin-activity-row-change td{background:#fff7e8}.admin-activity-row-change td:first-child{box-shadow:inset 3px 0 #d18a18}.admin-activity-row-change td:nth-child(2){color:#694300}.admin-activity-change-flag{display:inline-flex;align-items:center;margin:0 7px 2px 0;padding:3px 6px;border-radius:4px;background:#f3d79c;color:#684100;font-size:9px;font-weight:800;letter-spacing:.04em;vertical-align:middle}.admin-activity-more{display:flex;justify-content:center;padding:12px 0 2px}
 
 .site-map-canvas-stage{cursor:grab}.site-map-canvas-stage.dragging{cursor:grabbing}
+
+/* Paint timeline day/week guides once for the chart instead of once per task row. */
+.overview-gantt-body{background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(var(--overview-day-width,28px) * 7 - 2px),#b4c3ce calc(var(--overview-day-width,28px) * 7 - 2px),#b4c3ce calc(var(--overview-day-width,28px) * 7)),repeating-linear-gradient(to right,transparent 0,transparent calc(var(--overview-day-width,28px) - 1px),#e9eef2 calc(var(--overview-day-width,28px) - 1px),#e9eef2 var(--overview-day-width,28px));background-position:286px 0;background-repeat:repeat}
+.overview-gantt-track{background:transparent!important}
+@media(max-width:760px){.overview-gantt-body{background-position-x:220px}}
