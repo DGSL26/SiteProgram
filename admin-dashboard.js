@@ -1,7 +1,7 @@
 (() => {
   const escAdmin = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const roleNames = { editor: 'Full access', viewer: 'View only', phone_viewer: 'Phone view' };
-  let usersCache = [], activityCache = [], selectedActivityUserId = '', busy = false;
+  let usersCache = [], activityCache = [], selectedActivityUserId = '', activityVisibleLimit = 100, busy = false;
 
   async function invoke(action, payload = {}) {
     if (!db || !user || projectRole !== 'admin') throw new Error('Only the administrator can manage accounts.');
@@ -24,17 +24,18 @@
         </form>
       </section>
       <section class="admin-card"><div class="admin-card-heading"><div><h3>SiteProgram users</h3><p>Change access, update a password, or disable an account when someone leaves.</p></div><span class="admin-count" data-admin-user-count>Loading…</span></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Access</th><th>Last sign-in</th><th>Status</th><th>Account actions</th></tr></thead><tbody data-admin-users><tr><td colspan="5">Loading accounts…</td></tr></tbody></table></div></section>
-      <section class="admin-card"><div class="admin-card-heading"><div><h3>Activity history</h3><p>Select an account to view its sign-ins, sections opened, and schedule changes.</p></div><button class="btn" type="button" data-admin-activity-refresh>Refresh history</button></div><div class="admin-activity-browser"><div class="admin-activity-accounts" data-admin-activity-accounts>Loading accounts…</div><div class="admin-activity-person hidden" data-admin-activity-person><div class="admin-activity-person-head"><button class="btn" type="button" data-admin-activity-back>‹ &nbsp; All accounts</button><strong data-admin-activity-person-name></strong></div><div class="admin-table-wrap"><table class="admin-table admin-activity-table"><thead><tr><th>When</th><th>Activity</th><th>Details</th></tr></thead><tbody data-admin-activity><tr><td colspan="3">Choose an account to view its history.</td></tr></tbody></table></div></div></div></section>
+      <section class="admin-card"><div class="admin-card-heading"><div><h3>Activity history</h3><p>Each account keeps its latest 5,000 entries. Schedule changes are highlighted.</p></div><button class="btn" type="button" data-admin-activity-refresh>Refresh history</button></div><div class="admin-activity-browser"><div class="admin-activity-accounts" data-admin-activity-accounts>Loading accounts…</div><div class="admin-activity-person hidden" data-admin-activity-person><div class="admin-activity-person-head"><button class="btn" type="button" data-admin-activity-back>‹ &nbsp; All accounts</button><strong data-admin-activity-person-name></strong></div><div class="admin-table-wrap"><table class="admin-table admin-activity-table"><thead><tr><th>When</th><th>Activity</th><th>Details</th></tr></thead><tbody data-admin-activity><tr><td colspan="3">Choose an account to view its history.</td></tr></tbody></table></div><div class="admin-activity-more hidden" data-admin-activity-more-wrap><button class="btn" type="button" data-admin-activity-more>Show older activity</button></div></div></div></section>
       <div class="admin-password-dialog hidden" data-admin-password-dialog role="dialog" aria-modal="true" aria-labelledby="adminPasswordTitle"><div class="admin-password-dialog-card"><button class="admin-password-dialog-close" type="button" data-password-cancel aria-label="Close">×</button><h3 id="adminPasswordTitle">Set password</h3><p>Current passwords cannot be viewed. Enter a new password to replace this user’s password. You can show it here to share it after saving.</p><form data-admin-password-form><label>New password<span class="admin-password-input"><input type="password" name="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"><button class="admin-password-toggle" type="button" data-password-toggle aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label><div class="admin-password-dialog-actions"><button class="btn" type="button" data-password-cancel>Cancel</button><button class="btn primary" type="submit">Save password</button></div><p class="admin-password-saved hidden" data-password-saved>Password saved. You can reveal it here to share it; close this window when finished.</p></form></div></div>
     </div>`;
     box.querySelector('[data-admin-refresh]').onclick = () => refreshUsers(box);
-    box.querySelector('[data-admin-activity-refresh]').onclick = () => refreshActivity(box);
-    box.querySelector('[data-admin-activity-back]').onclick = () => { selectedActivityUserId = ''; renderActivitySection(box); };
+    box.querySelector('[data-admin-activity-refresh]').onclick = () => selectedActivityUserId ? refreshActivity(box) : refreshUsers(box);
+    box.querySelector('[data-admin-activity-back]').onclick = () => { selectedActivityUserId = ''; activityVisibleLimit = 100; renderActivitySection(box); };
+    box.querySelector('[data-admin-activity-more]').onclick = () => { activityVisibleLimit += 100; renderActivitySection(box); };
     box.querySelector('[data-admin-create]').onsubmit = event => createUser(event, box);
     box.querySelectorAll('[data-password-toggle]').forEach(button => button.onclick = () => togglePassword(button));
     box.querySelectorAll('[data-password-cancel]').forEach(button => button.onclick = () => closePasswordDialog(box));
     box.querySelector('[data-admin-password-form]').onsubmit = event => savePassword(event, box);
-    refreshUsers(box); refreshActivity(box);
+    refreshUsers(box); if (selectedActivityUserId) refreshActivity(box); else renderActivitySection(box);
   }
 
   function dateText(value) {
@@ -70,8 +71,15 @@
   async function refreshActivity(box) {
     if (!box.isConnected || busy) return;
     const body = box.querySelector('[data-admin-activity]'); if (!body) return;
+    if (!selectedActivityUserId) { activityCache = []; renderActivitySection(box); return; }
+    body.innerHTML = '<tr><td colspan="3">Loading activity…</td></tr>';
     try {
-      const data = await invoke('list_activity'); activityCache = data.activity || [];
+      const { data, error } = await db.from('siteprogram_audit_log')
+        .select('id,created_at,actor_user_id,actor_email,event_type,entity,entity_id,summary,details')
+        .eq('project_id', projectId).eq('actor_user_id', selectedActivityUserId)
+        .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(5000);
+      if (error) throw error;
+      activityCache = data || [];
       renderActivitySection(box);
     } catch (error) {
       const accounts = box.querySelector('[data-admin-activity-accounts]'), person = box.querySelector('[data-admin-activity-person]');
@@ -87,19 +95,28 @@
     accounts.classList.toggle('hidden', Boolean(selected)); person.classList.toggle('hidden', !selected);
     if (!selected) {
       accounts.innerHTML = usersCache.map(item => {
-        const count = activityCache.filter(event => String(event.actor_user_id) === String(item.user_id)).length;
-        return `<button class="admin-activity-account" type="button" data-activity-account="${escAdmin(item.user_id)}"><span class="admin-activity-avatar">${escAdmin((item.email || '?').slice(0,1).toUpperCase())}</span><span class="admin-activity-account-info"><strong>${escAdmin(item.email || 'Unknown email')}</strong><small>${escAdmin(roleNames[item.role] || 'Administrator')} · Last sign-in ${escAdmin(dateText(item.last_sign_in_at))}</small></span><span class="admin-activity-count">${count} ${count === 1 ? 'entry' : 'entries'}</span><span class="admin-activity-arrow">›</span></button>`;
+        return `<button class="admin-activity-account" type="button" data-activity-account="${escAdmin(item.user_id)}"><span class="admin-activity-avatar">${escAdmin((item.email || '?').slice(0,1).toUpperCase())}</span><span class="admin-activity-account-info"><strong>${escAdmin(item.email || 'Unknown email')}</strong><small>${escAdmin(roleNames[item.role] || 'Administrator')} · Last sign-in ${escAdmin(dateText(item.last_sign_in_at))}</small></span><span class="admin-activity-count">View history</span><span class="admin-activity-arrow">›</span></button>`;
       }).join('') || '<p class="empty">No registered accounts yet.</p>';
-      accounts.querySelectorAll('[data-activity-account]').forEach(button => button.onclick = () => { selectedActivityUserId = button.dataset.activityAccount; renderActivitySection(box); });
+      accounts.querySelectorAll('[data-activity-account]').forEach(button => button.onclick = () => { selectedActivityUserId = button.dataset.activityAccount; activityVisibleLimit = 100; activityCache = []; renderActivitySection(box); refreshActivity(box); });
       return;
     }
     box.querySelector('[data-admin-activity-person-name]').textContent = selected.email || 'Account activity';
     const rows = activityCache.filter(item => String(item.actor_user_id) === String(selected.user_id));
-    body.innerHTML = rows.map(item => `<tr><td>${escAdmin(dateText(item.created_at))}</td><td>${escAdmin(activityLabel(item.event_type))}</td><td>${escAdmin(item.summary || '')}${detailsText(item.details) ? `<small class="admin-change-detail">${escAdmin(detailsText(item.details))}</small>` : ''}</td></tr>`).join('') || '<tr><td colspan="3">No activity recorded for this account yet.</td></tr>';
+    body.innerHTML = rows.slice(0, activityVisibleLimit).map(item => { const changed = isChangeActivity(item.event_type); return `<tr class="${changed ? 'admin-activity-row-change' : ''}"><td>${escAdmin(dateText(item.created_at))}</td><td>${changed ? '<span class="admin-activity-change-flag">CHANGE</span>' : ''}<strong>${escAdmin(activityLabel(item.event_type, item.summary))}</strong></td><td>${escAdmin(item.summary || '')}${detailsText(item.details) ? `<small class="admin-change-detail">${escAdmin(detailsText(item.details))}</small>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="3">No activity recorded for this account yet.</td></tr>';
+    const moreWrap = box.querySelector('[data-admin-activity-more-wrap]'), moreButton = box.querySelector('[data-admin-activity-more]');
+    moreWrap?.classList.toggle('hidden', rows.length <= activityVisibleLimit);
+    if (moreButton) moreButton.textContent = `Show older activity (${Math.max(0, rows.length - activityVisibleLimit)} remaining)`;
   }
 
-  function activityLabel(type) {
-    return ({ sign_in: 'Signed in', sign_out: 'Signed out', section_view: 'Opened section', data_change: 'Changed schedule', user_created: 'Added user', user_role_changed: 'Changed access', user_password_reset: 'Set user password', user_disabled: 'Disabled access', user_enabled: 'Enabled access' })[type] || String(type || 'Activity').replaceAll('_', ' ');
+  function isChangeActivity(type) { return !['sign_in', 'sign_out', 'section_view'].includes(type); }
+
+  function activityLabel(type, summary = '') {
+    if (type === 'data_change') {
+      if (/^(added|created)\b/i.test(summary)) return 'Added';
+      if (/^(removed|deleted)\b/i.test(summary)) return 'Deleted';
+      return 'Edited';
+    }
+    return ({ sign_in: 'Signed in', sign_out: 'Signed out', section_view: 'Opened section', user_created: 'Added user', user_role_changed: 'Changed access', user_password_reset: 'Changed password', user_disabled: 'Disabled access', user_enabled: 'Enabled access' })[type] || String(type || 'Activity').replaceAll('_', ' ');
   }
 
   function detailsText(details) {

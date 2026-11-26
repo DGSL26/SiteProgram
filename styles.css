@@ -784,3 +784,5 @@ body.read-only-role .branch-task-number{pointer-events:none;cursor:default!impor
 .overview-gantt-live:hover{filter:brightness(.9)}
 .overview-gantt-today-marker{position:absolute;z-index:1;top:0;bottom:0;width:2px;background:#d28716;opacity:.8;pointer-events:none}
 @media(max-width:760px){.overview-timeline-toolbar{align-items:stretch}.overview-timeline-toolbar .overview-filter,.overview-range-filter{flex:1;min-width:135px}.overview-visible-range{width:100%;margin:0}.overview-zoom-controls{margin-left:0}.overview-gantt-label{width:220px;min-width:220px}}
+
+.admin-activity-row-change td{background:#fff7e8}.admin-activity-row-change td:first-child{box-shadow:inset 3px 0 #d18a18}.admin-activity-row-change td:nth-child(2){color:#694300}.admin-activity-change-flag{display:inline-flex;align-items:center;margin:0 7px 2px 0;padding:3px 6px;border-radius:4px;background:#f3d79c;color:#684100;font-size:9px;font-weight:800;letter-spacing:.04em;vertical-align:middle}.admin-activity-more{display:flex;justify-content:center;padding:12px 0 2px}
