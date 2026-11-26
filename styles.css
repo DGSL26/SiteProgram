@@ -793,3 +793,7 @@ body.read-only-role .branch-task-number{pointer-events:none;cursor:default!impor
 .overview-gantt-body{background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(var(--overview-day-width,28px) * 7 - 2px),#b4c3ce calc(var(--overview-day-width,28px) * 7 - 2px),#b4c3ce calc(var(--overview-day-width,28px) * 7)),repeating-linear-gradient(to right,transparent 0,transparent calc(var(--overview-day-width,28px) - 1px),#e9eef2 calc(var(--overview-day-width,28px) - 1px),#e9eef2 var(--overview-day-width,28px));background-position:286px 0;background-repeat:repeat}
 .overview-gantt-track{background:transparent!important}
 @media(max-width:760px){.overview-gantt-body{background-position-x:220px}}
+
+/* Keep each guide tile exactly one day or one week wide. */
+.overview-gantt-body{background-image:linear-gradient(to right,transparent calc(100% - 2px),#b4c3ce calc(100% - 2px),#b4c3ce 100%),linear-gradient(to right,transparent calc(100% - 1px),#e9eef2 calc(100% - 1px),#e9eef2 100%);background-size:var(--overview-week-width,196px) 100%,var(--overview-day-width,28px) 100%;background-position:286px 0;background-repeat:repeat}
+@media(max-width:760px){.overview-gantt-body{background-position-x:220px}}
