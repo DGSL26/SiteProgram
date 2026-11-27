@@ -800,3 +800,6 @@ body.read-only-role .branch-task-number{pointer-events:none;cursor:default!impor
 
 /* Keep the overview timeline desktop-only; preserve the existing phone overview. */
 @media (max-width:900px),(max-device-width:1024px),(hover:none) and (pointer:coarse){html body.compact-device #overviewTimelineHost,html body.compact-device .overview-section-head{display:none!important}}
+
+/* On desktop, the right-hand Fit button already covers this zoom label. */
+body:not(.compact-device) .site-map-controls #siteMapZoomValue{display:none!important}
